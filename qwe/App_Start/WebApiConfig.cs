@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http;
+using qwe.Utilities;
 
 namespace qwe
 {
@@ -10,6 +11,9 @@ namespace qwe
         public static void Register(HttpConfiguration config)
         {
             // Web API configuration and services
+
+            // Register global exception filter
+            config.Filters.Add(new ApiExceptionFilter());
 
             // Web API routes
             config.MapHttpAttributeRoutes();

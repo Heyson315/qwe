@@ -24,5 +24,10 @@ namespace qwe.Controllers
         {
             return View();
         }
+
+        public ActionResult Documents()
+        {
+            return View();
+        }
     }
 }

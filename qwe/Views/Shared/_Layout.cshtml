@@ -4,11 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@ViewBag.Title - HHR CPA</title>
-    @* Add your styles here *@
+    <link href="~/Content/chat-widget.css" rel="stylesheet" />
 </head>
 <body>
     @RenderBody()
 
+    <script src="~/Scripts/chat-widget.js"></script>
     @RenderSection("scripts", required: false)
 </body>
 </html>
