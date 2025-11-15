@@ -361,3 +361,26 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# ==================================================
+# HHR CPA Project-Specific Ignores
+# ==================================================
+
+# Uploaded documents directory (keep structure, ignore files)
+qwe/App_Data/Uploads/*
+!qwe/App_Data/Uploads/.gitkeep
+
+# Connection strings and sensitive configuration
+**/connectionStrings.config
+**/appSettings.config
+
+# Local development settings
+*.local.config
+
+# Environment-specific logs
+logs/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3

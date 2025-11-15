@@ -1,3 +1,4 @@
 <Solution>
-  <Project Path="qwe/qwe.csproj" />
+  <Project Path="qwe.Tests/qwe.Tests.csproj" />
+  <Project Path="qwe/qwe.csproj" Id="f92e2e28-f6e4-457f-9f80-c69bb75c5505" />
 </Solution>
