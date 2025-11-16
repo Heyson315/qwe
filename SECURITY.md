@@ -1,7 +1,3 @@
----
-
-### ✅ SECURITY.md Template
-```markdown
 # Security Policy
 
 ## Supported Versions
