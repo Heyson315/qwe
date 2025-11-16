@@ -1,4 +1,3 @@
-
 ---
 
 ### ✅ SECURITY.md Template
