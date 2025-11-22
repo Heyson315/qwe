@@ -111,7 +111,7 @@ jobs:
         run: nuget restore qwe.sln
       
       - name: Build solution
-        run: msbuild qwe.slnx /p:Configuration=Release /p:Platform="Any CPU"
+        run: msbuild qwe.sln /p:Configuration=Release /p:Platform="Any CPU"
       
       - name: Run tests
         run: dotnet test qwe.Tests/qwe.Tests.csproj --configuration Release --no-build
