@@ -85,9 +85,9 @@ name: .NET Framework CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, develop ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, develop ]
 
 permissions:
   contents: read
