@@ -108,7 +108,7 @@ jobs:
         uses: NuGet/setup-nuget@v2
       
       - name: Restore NuGet packages
-        run: nuget restore qwe.slnx
+        run: nuget restore qwe.sln
       
       - name: Build solution
         run: msbuild qwe.slnx /p:Configuration=Release /p:Platform="Any CPU"
