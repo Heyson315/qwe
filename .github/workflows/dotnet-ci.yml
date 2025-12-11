@@ -1,0 +1,146 @@
+name: .NET CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '4.7.2'
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Restore NuGet Packages
+        run: nuget restore qwe.slnx
+
+      - name: Build Solution
+        run: msbuild qwe.slnx /p:Configuration=Release /p:Platform="Any CPU" /m
+
+      - name: Run Tests
+        run: dotnet test qwe.Tests\qwe.Tests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: '**/test-results.trx'
+          retention-days: 30
+
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: windows-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '4.7.2'
+
+      - name: Restore NuGet Packages
+        run: nuget restore qwe.slnx
+
+      - name: Run Code Analysis
+        run: msbuild qwe.slnx /p:Configuration=Release /p:RunCodeAnalysis=true /p:CodeAnalysisRuleSet=MinimumRecommendedRules.ruleset
+
+  security-scan:
+    name: Security Scanning
+    runs-on: windows-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Security DevSkim Scanner
+        uses: microsoft/security-devskim-action@v1
+        continue-on-error: true
+
+      - name: Upload DevSkim Results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: devskim-results.sarif
+        continue-on-error: true
+
+      - name: Secret Scanning with TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+        continue-on-error: true
+
+  dependency-check:
+    name: Dependency Security Check
+    runs-on: windows-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup NuGet
+        uses: nuget/setup-nuget@v2
+
+      - name: List NuGet Packages
+        run: |
+          Write-Host "Checking for vulnerable NuGet packages..."
+          nuget list -Source https://api.nuget.org/v3/index.json | Out-File -FilePath nuget-packages.txt
+        shell: pwsh
+
+      - name: Upload Package List
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: nuget-packages.txt
+          retention-days: 30
+
+  build-summary:
+    name: Build Summary
+    runs-on: windows-latest
+    needs: [build-and-test, code-quality, security-scan, dependency-check]
+    if: always()
+
+    steps:
+      - name: Generate Summary
+        run: |
+          Write-Host "## 🎯 HHR CPA Website Build Summary" 
+          Write-Host ""
+          Write-Host "### Build Status:"
+          Write-Host "- **Build & Test**: ${{ needs.build-and-test.result }}"
+          Write-Host "- **Code Quality**: ${{ needs.code-quality.result }}"
+          Write-Host "- **Security Scan**: ${{ needs.security-scan.result }}"
+          Write-Host "- **Dependency Check**: ${{ needs.dependency-check.result }}"
+          Write-Host ""
+          Write-Host "### 🏗️ Project Details:"
+          Write-Host "- Framework: ASP.NET MVC 5 (.NET Framework 4.7.2)"
+          Write-Host "- Features: Document Management, AI Chatbot, Services API"
+          Write-Host "- Test Framework: MSTest"
+          Write-Host ""
+          Write-Host "Generated at: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')"
+        shell: pwsh

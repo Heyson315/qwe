@@ -69,9 +69,10 @@ namespace qwe.Services
                 return GetAllServices();
 
             var services = GetAllServices();
+            var lowerKeyword = keyword.ToLower();
             return services.FindAll(s => 
-                s.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
-                s.Description.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                s.Name.ToLower().Contains(lowerKeyword) ||
+                s.Description.ToLower().Contains(lowerKeyword)
             );
         }
     }
