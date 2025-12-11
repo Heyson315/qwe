@@ -7,7 +7,7 @@ document.getElementById('contactForm').addEventListener('submit', async function
     
     // Option 1: Send to ASP.NET MVC backend
     // When Docker container is running, this will send to your API
-    const API_ENDPOINT = 'http://localhost:8080/api';
+    const API_ENDPOINT = 'http://localhost:8081/api';
     
     try {
         // For now, show success message (implement actual API call when backend is ready)
@@ -85,7 +85,7 @@ document.querySelectorAll('.feature-card, .service-card, .tech-item').forEach(el
 // Check if Docker container is running
 async function checkDockerStatus() {
     try {
-        const response = await fetch('http://localhost:8080/api/services', {
+        const response = await fetch('http://localhost:8081/api/services', {
             method: 'GET',
             mode: 'no-cors'
         });
@@ -141,7 +141,7 @@ function formatDate(date) {
 
 // Display current year in footer
 const currentYear = new Date().getFullYear();
-document.querySelector('.footer-bottom p').textContent = `© ${currentYear} HHR CPA. All rights reserved.`;
+document.querySelector('.footer-bottom p').textContent = `© ${currentYear} HHR. All rights reserved.`;
 
 // Add loading state to buttons
 function setButtonLoading(button, isLoading) {
@@ -176,7 +176,7 @@ if (emailInput) {
 }
 
 // Console welcome message
-console.log('%cHHR CPA Platform', 'color: #0066cc; font-size: 24px; font-weight: bold;');
+console.log('%cHHR - AI Automation & Development', 'color: #0066cc; font-size: 24px; font-weight: bold;');
 console.log('%cBuilt with ASP.NET MVC + Docker + SQL Server', 'color: #00b894; font-size: 14px;');
 console.log('GitHub: https://github.com/Heyson315/qwe');
 console.log('SharePoint: https://rahmanfinanceandaccounting.sharepoint.com');
