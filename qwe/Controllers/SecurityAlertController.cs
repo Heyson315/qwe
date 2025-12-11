@@ -33,7 +33,7 @@ namespace qwe.Controllers
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex);
+                return InternalServerError(new Exception("An error occurred while retrieving all alerts"));
             }
         }
 
@@ -54,7 +54,7 @@ namespace qwe.Controllers
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex);
+                return InternalServerError(new Exception("An error occurred while retrieving active alerts"));
             }
         }
 
@@ -79,43 +79,36 @@ namespace qwe.Controllers
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex);
+                return InternalServerError(new Exception("An error occurred while retrieving the alert"));
             }
         }
 
         // POST: api/securityalert/create
         [HttpPost]
         [Route("api/securityalert/create")]
-        public IHttpActionResult CreateAlert([FromBody] dynamic alertData)
+        public IHttpActionResult CreateAlert([FromBody] CreateAlertRequest request)
         {
             try
             {
-                if (alertData == null)
+                if (request == null)
                 {
                     return BadRequest("Alert data is required");
                 }
 
-                string title = alertData.title;
-                string description = alertData.description;
-                string severityStr = alertData.severity;
-                string source = alertData.source;
-                string affectedEndpoint = alertData.affectedEndpoint;
-                string affectedUser = alertData.affectedUser;
-
-                if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(description) ||
-                    string.IsNullOrWhiteSpace(severityStr) || string.IsNullOrWhiteSpace(source))
+                if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Description) ||
+                    string.IsNullOrWhiteSpace(request.Severity) || string.IsNullOrWhiteSpace(request.Source))
                 {
                     return BadRequest("Title, description, severity, and source are required");
                 }
 
                 AlertSeverity severity;
-                if (!Enum.TryParse(severityStr, true, out severity))
+                if (!Enum.TryParse(request.Severity, true, out severity))
                 {
-                    return BadRequest("Invalid severity level");
+                    return BadRequest("Invalid severity level. Must be: Critical, High, Medium, Low, or Informational");
                 }
 
-                var alert = _alertService.CreateAlert(title, description, severity, source, 
-                                                      affectedEndpoint, affectedUser);
+                var alert = _alertService.CreateAlert(request.Title, request.Description, severity, request.Source, 
+                                                      request.AffectedEndpoint, request.AffectedUser);
 
                 return Ok(new
                 {
@@ -126,7 +119,7 @@ namespace qwe.Controllers
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex);
+                return InternalServerError(new Exception("An error occurred while creating the alert"));
             }
         }
 
@@ -149,7 +142,7 @@ namespace qwe.Controllers
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex);
+                return InternalServerError(new Exception("An error occurred while validating the alert"));
             }
         }
 
@@ -182,7 +175,7 @@ namespace qwe.Controllers
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex);
+                return InternalServerError(new Exception("An error occurred while investigating the alert"));
             }
         }
 
@@ -213,7 +206,7 @@ namespace qwe.Controllers
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex);
+                return InternalServerError(new Exception("An error occurred while gathering logs"));
             }
         }
 
@@ -243,7 +236,7 @@ namespace qwe.Controllers
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex);
+                return InternalServerError(new Exception("An error occurred while checking for false positive"));
             }
         }
 
@@ -286,7 +279,7 @@ namespace qwe.Controllers
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex);
+                return InternalServerError(new Exception("An error occurred while remediating the alert"));
             }
         }
 
@@ -323,7 +316,7 @@ namespace qwe.Controllers
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex);
+                return InternalServerError(new Exception("An error occurred while escalating the alert"));
             }
         }
 
@@ -344,14 +337,14 @@ namespace qwe.Controllers
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex);
+                return InternalServerError(new Exception("An error occurred while generating the summary report"));
             }
         }
 
         // POST: api/securityalert/close/{id}
         [HttpPost]
         [Route("api/securityalert/close/{id}")]
-        public IHttpActionResult CloseAlert(int id, [FromBody] dynamic request)
+        public IHttpActionResult CloseAlert(int id, [FromBody] CloseAlertRequest request)
         {
             try
             {
@@ -361,7 +354,7 @@ namespace qwe.Controllers
                     return NotFound();
                 }
 
-                string closedBy = request?.closedBy ?? "System";
+                string closedBy = request?.ClosedBy ?? "System";
                 _alertService.CloseAlert(id, closedBy);
 
                 return Ok(new
@@ -373,18 +366,18 @@ namespace qwe.Controllers
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex);
+                return InternalServerError(new Exception("An error occurred while closing the alert"));
             }
         }
 
         // POST: api/securityalert/closeresolved
         [HttpPost]
         [Route("api/securityalert/closeresolved")]
-        public IHttpActionResult CloseResolvedAlerts([FromBody] dynamic request)
+        public IHttpActionResult CloseResolvedAlerts([FromBody] CloseAlertRequest request)
         {
             try
             {
-                string closedBy = request?.closedBy ?? "System";
+                string closedBy = request?.ClosedBy ?? "System";
                 var count = _alertService.CloseResolvedAlerts(closedBy);
 
                 return Ok(new
@@ -396,7 +389,7 @@ namespace qwe.Controllers
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex);
+                return InternalServerError(new Exception("An error occurred while closing resolved alerts"));
             }
         }
     }

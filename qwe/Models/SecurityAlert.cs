@@ -72,6 +72,21 @@ namespace qwe.Models
         public string EscalatedBy { get; set; }
     }
 
+    public class CreateAlertRequest
+    {
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public string Severity { get; set; }
+        public string Source { get; set; }
+        public string AffectedEndpoint { get; set; }
+        public string AffectedUser { get; set; }
+    }
+
+    public class CloseAlertRequest
+    {
+        public string ClosedBy { get; set; }
+    }
+
     public class SecurityAlertSummary
     {
         public int TotalAlerts { get; set; }

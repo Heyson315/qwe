@@ -7,45 +7,59 @@ namespace qwe.Services
 {
     public class SecurityAlertService
     {
-        private static List<SecurityAlert> _alerts = new List<SecurityAlert>();
+        private static readonly object _lock = new object();
+        private static readonly List<SecurityAlert> _alerts = new List<SecurityAlert>();
         private static int _nextId = 1;
 
         // Step 1: Collect all current security alerts
         public List<SecurityAlert> GetAllAlerts()
         {
-            return _alerts.ToList();
+            lock (_lock)
+            {
+                return _alerts.ToList();
+            }
         }
 
         public List<SecurityAlert> GetActiveAlerts()
         {
-            return _alerts.Where(a => a.Status != AlertStatus.Closed && 
-                                      a.Status != AlertStatus.FalsePositive).ToList();
+            lock (_lock)
+            {
+                return _alerts.Where(a => a.Status != AlertStatus.Closed && 
+                                          a.Status != AlertStatus.FalsePositive).ToList();
+            }
         }
 
         public SecurityAlert GetAlertById(int id)
         {
-            return _alerts.FirstOrDefault(a => a.Id == id);
+            lock (_lock)
+            {
+                return _alerts.FirstOrDefault(a => a.Id == id);
+            }
         }
 
         // Simulate collecting alerts from SIEM/security dashboard
         public SecurityAlert CreateAlert(string title, string description, AlertSeverity severity, 
                                         string source, string affectedEndpoint = null, string affectedUser = null)
         {
-            var alert = new SecurityAlert
+            lock (_lock)
             {
-                Id = _nextId++,
-                AlertId = $"SEC-{DateTime.UtcNow:yyyyMMdd}-{_nextId}",
-                Title = title,
-                Description = description,
-                Severity = severity,
-                Source = source,
-                AffectedEndpoint = affectedEndpoint,
-                AffectedUser = affectedUser,
-                DetectedAt = DateTime.UtcNow
-            };
+                var id = _nextId++;
+                var alert = new SecurityAlert
+                {
+                    Id = id,
+                    AlertId = $"SEC-{DateTime.UtcNow:yyyyMMdd}-{id:D6}",
+                    Title = title,
+                    Description = description,
+                    Severity = severity,
+                    Source = source,
+                    AffectedEndpoint = affectedEndpoint,
+                    AffectedUser = affectedUser,
+                    DetectedAt = DateTime.UtcNow
+                };
 
-            _alerts.Add(alert);
-            return alert;
+                _alerts.Add(alert);
+                return alert;
+            }
         }
 
         // Step 2: Validate severity and source
@@ -79,10 +93,22 @@ namespace qwe.Services
         // Step 2: Gather related logs, endpoints, and user activity
         public void GatherAlertContext(int alertId, List<string> logs)
         {
-            var alert = GetAlertById(alertId);
-            if (alert != null)
+            if (logs == null || logs.Count == 0)
             {
-                alert.RelatedLogs.AddRange(logs);
+                return;
+            }
+
+            lock (_lock)
+            {
+                var alert = _alerts.FirstOrDefault(a => a.Id == alertId);
+                if (alert != null)
+                {
+                    // Validate and limit log entries to prevent abuse
+                    var validLogs = logs.Where(log => !string.IsNullOrWhiteSpace(log))
+                                        .Take(100)
+                                        .ToList();
+                    alert.RelatedLogs.AddRange(validLogs);
+                }
             }
         }
 
@@ -125,12 +151,15 @@ namespace qwe.Services
         // Start investigation
         public void InvestigateAlert(int alertId, string investigatedBy)
         {
-            var alert = GetAlertById(alertId);
-            if (alert != null && alert.Status == AlertStatus.New)
+            lock (_lock)
             {
-                alert.Status = AlertStatus.InProgress;
-                alert.InvestigatedAt = DateTime.UtcNow;
-                alert.InvestigatedBy = investigatedBy;
+                var alert = _alerts.FirstOrDefault(a => a.Id == alertId);
+                if (alert != null && (alert.Status == AlertStatus.New || alert.Status == AlertStatus.Escalated))
+                {
+                    alert.Status = AlertStatus.InProgress;
+                    alert.InvestigatedAt = DateTime.UtcNow;
+                    alert.InvestigatedBy = investigatedBy;
+                }
             }
         }
 
@@ -269,34 +298,44 @@ namespace qwe.Services
         // Step 6: Close resolved alerts
         public void CloseAlert(int alertId, string closedBy)
         {
-            var alert = GetAlertById(alertId);
-            if (alert != null && (alert.Status == AlertStatus.Remediated || alert.Status == AlertStatus.FalsePositive))
+            lock (_lock)
             {
-                alert.Status = AlertStatus.Closed;
-                alert.ResolvedAt = DateTime.UtcNow;
+                var alert = _alerts.FirstOrDefault(a => a.Id == alertId);
+                if (alert != null && (alert.Status == AlertStatus.Remediated || alert.Status == AlertStatus.FalsePositive))
+                {
+                    alert.Status = AlertStatus.Closed;
+                    alert.ResolvedAt = DateTime.UtcNow;
+                }
             }
         }
 
         // Bulk operations
         public int CloseResolvedAlerts(string closedBy)
         {
-            var resolvedAlerts = _alerts.Where(a => 
-                a.Status == AlertStatus.Remediated || 
-                a.Status == AlertStatus.FalsePositive).ToList();
-
-            foreach (var alert in resolvedAlerts)
+            lock (_lock)
             {
-                CloseAlert(alert.Id, closedBy);
-            }
+                var resolvedAlerts = _alerts.Where(a => 
+                    a.Status == AlertStatus.Remediated || 
+                    a.Status == AlertStatus.FalsePositive).ToList();
 
-            return resolvedAlerts.Count;
+                foreach (var alert in resolvedAlerts)
+                {
+                    alert.Status = AlertStatus.Closed;
+                    alert.ResolvedAt = DateTime.UtcNow;
+                }
+
+                return resolvedAlerts.Count;
+            }
         }
 
         // Clear all alerts (for testing purposes)
         public void ClearAllAlerts()
         {
-            _alerts.Clear();
-            _nextId = 1;
+            lock (_lock)
+            {
+                _alerts.Clear();
+                _nextId = 1;
+            }
         }
     }
 }
