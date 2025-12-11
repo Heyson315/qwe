@@ -46,6 +46,25 @@ A modern, feature-rich website for HHR CPA (Certified Public Accountant) service
 - `GET /api/chat/history` - Get chat history
 - `DELETE /api/chat/history` - Clear chat history
 
+### 5. **Security Alert Investigation and Remediation System**
+- Comprehensive security alert management
+- Alert collection from SIEM and security tools
+- Investigation workflow with validation and log gathering
+- Multiple remediation types (isolate endpoint, revoke credentials, patch vulnerabilities)
+- Escalation to security team with full context
+- Summary reporting with metrics and analytics
+
+**API Endpoints:**
+- `GET /api/securityalert` - List all alerts
+- `GET /api/securityalert/active` - List active alerts
+- `POST /api/securityalert/create` - Create new alert
+- `POST /api/securityalert/investigate` - Investigate alert
+- `POST /api/securityalert/remediate` - Remediate alert
+- `POST /api/securityalert/escalate` - Escalate alert
+- `GET /api/securityalert/summary` - Generate summary report
+
+**Documentation:** See [SECURITY_ALERTS.md](SECURITY_ALERTS.md) for complete documentation.
+
 ## Technologies Used
 
 - **Backend:** ASP.NET MVC 5 (.NET Framework 4.7.2)

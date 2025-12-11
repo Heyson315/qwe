@@ -300,13 +300,55 @@ New → InProgress → [Remediated|Escalated|FalsePositive] → Closed
 
 ⚠️ **Important Security Notes:**
 
-1. **Authentication Required** - In production, all endpoints should require authentication
-2. **Authorization** - Implement role-based access control (RBAC)
-3. **Audit Logging** - Log all alert modifications and actions
-4. **Rate Limiting** - Prevent API abuse
-5. **Input Validation** - Validate all user inputs
-6. **Secure Communication** - Use HTTPS only
-7. **Data Encryption** - Encrypt sensitive alert data at rest
+**IMPORTANT: This is a prototype/demo implementation. Before production deployment:**
+
+1. **Authentication Required** - All endpoints currently have no authentication
+   - Add `[Authorize]` attributes to controller
+   - Implement ASP.NET Identity or JWT authentication
+   - Use role-based access control (RBAC)
+
+2. **Authorization** - Implement proper authorization checks
+   - SecurityAdmin role for remediation and escalation
+   - SecurityAnalyst role for read and investigation
+   - Implement ownership verification to prevent IDOR
+
+3. **Persistent Storage** - Replace in-memory storage
+   - Use SQL Server or other database
+   - Add Entity Framework for data persistence
+   - Implement proper indexing for performance
+
+4. **Audit Logging** - Log all alert modifications and actions
+   - Track who did what and when
+   - Store IP addresses and timestamps
+   - Enable forensic investigation
+
+5. **Rate Limiting** - Prevent API abuse
+   - Implement throttling on all endpoints
+   - Set reasonable limits per user/IP
+
+6. **Input Validation** - Enhance validation beyond basic checks
+   - Add Data Annotations with length limits
+   - Sanitize all inputs (HtmlEncode)
+   - Validate against injection attacks
+
+7. **Secure Communication** - Use HTTPS only
+   - Enforce TLS 1.2 or higher
+   - Set secure cookie flags
+   - Add security headers (CSP, HSTS, etc.)
+
+8. **Error Handling** - Enhanced logging
+   - Log full exceptions server-side
+   - Return generic errors to clients
+   - Implement centralized error handling
+
+9. **Data Encryption** - Encrypt sensitive alert data at rest
+   - Use encryption for sensitive fields
+   - Secure credential storage
+
+10. **Monitoring & Alerting** - Implement real-time monitoring
+    - Set up alerts for critical operations
+    - Track API usage patterns
+    - Monitor for suspicious activity
 
 ## Integration Examples
 

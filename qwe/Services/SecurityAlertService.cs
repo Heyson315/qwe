@@ -134,7 +134,7 @@ namespace qwe.Services
 
             var description = alert.Description?.ToLower() ?? "";
             var isFalsePositive = falsePositiveIndicators.Any(indicator => 
-                description.Contains(indicator.ToLower()));
+                description.Contains(indicator));
 
             if (isFalsePositive)
             {
@@ -244,55 +244,61 @@ namespace qwe.Services
         // Step 4: Escalate to security team
         public void EscalateAlert(int alertId, string escalationNotes, string recommendedNextSteps, string escalatedBy)
         {
-            var alert = GetAlertById(alertId);
-            if (alert != null)
+            lock (_lock)
             {
-                alert.Status = AlertStatus.Escalated;
-                alert.EscalationNotes = $"[{escalatedBy}] {escalationNotes}\nRecommended: {recommendedNextSteps}";
-                // In production: Send notification to security team
+                var alert = _alerts.FirstOrDefault(a => a.Id == alertId);
+                if (alert != null)
+                {
+                    alert.Status = AlertStatus.Escalated;
+                    alert.EscalationNotes = $"[{escalatedBy}] {escalationNotes}\nRecommended: {recommendedNextSteps}";
+                    // In production: Send notification to security team
+                }
             }
         }
 
         // Step 5: Generate summary report
         public SecurityAlertSummary GenerateSummaryReport()
         {
-            var summary = new SecurityAlertSummary
+            lock (_lock)
             {
-                TotalAlerts = _alerts.Count,
-                AlertsInvestigated = _alerts.Count(a => a.InvestigatedAt.HasValue),
-                AlertsRemediated = _alerts.Count(a => a.Status == AlertStatus.Remediated),
-                AlertsEscalated = _alerts.Count(a => a.Status == AlertStatus.Escalated),
-                AlertsClosed = _alerts.Count(a => a.Status == AlertStatus.Closed),
-                FalsePositives = _alerts.Count(a => a.IsFalsePositive)
-            };
+                var summary = new SecurityAlertSummary
+                {
+                    TotalAlerts = _alerts.Count,
+                    AlertsInvestigated = _alerts.Count(a => a.InvestigatedAt.HasValue),
+                    AlertsRemediated = _alerts.Count(a => a.Status == AlertStatus.Remediated),
+                    AlertsEscalated = _alerts.Count(a => a.Status == AlertStatus.Escalated),
+                    AlertsClosed = _alerts.Count(a => a.Status == AlertStatus.Closed),
+                    FalsePositives = _alerts.Count(a => a.IsFalsePositive)
+                };
 
-            // Group alerts by severity
-            foreach (AlertSeverity severity in Enum.GetValues(typeof(AlertSeverity)))
-            {
-                var count = _alerts.Count(a => a.Severity == severity);
-                summary.AlertsBySeverity[severity] = count;
+                // Group alerts by severity
+                foreach (AlertSeverity severity in Enum.GetValues(typeof(AlertSeverity)))
+                {
+                    var count = _alerts.Count(a => a.Severity == severity);
+                    summary.AlertsBySeverity[severity] = count;
+                }
+
+                // Group alerts by status
+                foreach (AlertStatus status in Enum.GetValues(typeof(AlertStatus)))
+                {
+                    var count = _alerts.Count(a => a.Status == status);
+                    summary.AlertsByStatus[status] = count;
+                }
+
+                // Collect actions taken
+                summary.ActionsTaken = _alerts
+                    .Where(a => !string.IsNullOrEmpty(a.RemediationAction))
+                    .Select(a => $"Alert {a.AlertId}: {a.RemediationAction}")
+                    .ToList();
+
+                // Collect pending escalations
+                summary.PendingEscalations = _alerts
+                    .Where(a => a.Status == AlertStatus.Escalated)
+                    .Select(a => $"Alert {a.AlertId} - {a.Title}: {a.EscalationNotes}")
+                    .ToList();
+
+                return summary;
             }
-
-            // Group alerts by status
-            foreach (AlertStatus status in Enum.GetValues(typeof(AlertStatus)))
-            {
-                var count = _alerts.Count(a => a.Status == status);
-                summary.AlertsByStatus[status] = count;
-            }
-
-            // Collect actions taken
-            summary.ActionsTaken = _alerts
-                .Where(a => !string.IsNullOrEmpty(a.RemediationAction))
-                .Select(a => $"Alert {a.AlertId}: {a.RemediationAction}")
-                .ToList();
-
-            // Collect pending escalations
-            summary.PendingEscalations = _alerts
-                .Where(a => a.Status == AlertStatus.Escalated)
-                .Select(a => $"Alert {a.AlertId} - {a.Title}: {a.EscalationNotes}")
-                .ToList();
-
-            return summary;
         }
 
         // Step 6: Close resolved alerts
