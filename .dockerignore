@@ -1,0 +1,7 @@
+# Ignore published files (they'll be built fresh)
+publish/
+bin/
+obj/
+
+# Docker build artifacts
+*.log
