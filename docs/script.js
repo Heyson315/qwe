@@ -105,78 +105,189 @@ function openSharePoint() {
     window.open('https://rahmanfinanceandaccounting.sharepoint.com/sites/m365appbuilder-infogrid-8856/Shared%20Documents/Forms/AllItems.aspx', '_blank');
 }
 
-// Add navbar scroll effect
-let lastScroll = 0;
-window.addEventListener('scroll', () => {
-    const header = document.querySelector('header');
-    const currentScroll = window.pageYOffset;
-    
-    if (currentScroll > 100) {
-        header.style.boxShadow = '0 4px 20px rgba(0,0,0,0.15)';
-    } else {
-        header.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
-    }
-    
-    lastScroll = currentScroll;
-});
-
-// Add click tracking for analytics (when implemented)
-document.querySelectorAll('a').forEach(link => {
-    link.addEventListener('click', function() {
-        const href = this.getAttribute('href');
-        const text = this.textContent;
-        console.log(`Link clicked: ${text} (${href})`);
-        // TODO: Send to analytics service
-    });
-});
-
-// Helper function to format dates
-function formatDate(date) {
-    return new Intl.DateTimeFormat('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    }).format(date);
-}
-
-// Display current year in footer
-const currentYear = new Date().getFullYear();
-document.querySelector('.footer-bottom p').textContent = `© ${currentYear} HHR. All rights reserved.`;
-
-// Add loading state to buttons
-function setButtonLoading(button, isLoading) {
-    if (isLoading) {
-        button.disabled = true;
-        button.dataset.originalText = button.textContent;
-        button.textContent = 'Loading...';
-    } else {
-        button.disabled = false;
-        button.textContent = button.dataset.originalText;
-    }
-}
-
-// Form validation helper
-function validateEmail(email) {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-}
-
-// Add real-time form validation
-const emailInput = document.querySelector('input[name="email"]');
-if (emailInput) {
-    emailInput.addEventListener('blur', function() {
-        if (this.value && !validateEmail(this.value)) {
-            this.style.borderColor = 'red';
-            this.setCustomValidity('Please enter a valid email address');
-        } else {
-            this.style.borderColor = '#e0e0e0';
-            this.setCustomValidity('');
-        }
-    });
-}
-
 // Console welcome message
 console.log('%cHHR - AI Automation & Development', 'color: #0066cc; font-size: 24px; font-weight: bold;');
 console.log('%cBuilt with ASP.NET MVC + Docker + SQL Server', 'color: #00b894; font-size: 14px;');
 console.log('GitHub: https://github.com/Heyson315/qwe');
 console.log('SharePoint: https://rahmanfinanceandaccounting.sharepoint.com');
+
+// NEW: Animated Counter for Statistics
+function animateCounter(element) {
+    const target = parseInt(element.getAttribute('data-target'));
+    const duration = 2000; // 2 seconds
+    const step = target / (duration / 16); // 60fps
+    let current = 0;
+
+    const timer = setInterval(() => {
+        current += step;
+        if (current >= target) {
+            element.textContent = target;
+            clearInterval(timer);
+        } else {
+            element.textContent = Math.floor(current);
+        }
+    }, 16);
+}
+
+// Intersection Observer for Stats Animation
+const statsObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const statNumbers = entry.target.querySelectorAll('.stat-number');
+            statNumbers.forEach(num => {
+                animateCounter(num);
+            });
+            statsObserver.unobserve(entry.target);
+        }
+    });
+}, {
+    threshold: 0.5
+});
+
+const statsSection = document.querySelector('.stats');
+if (statsSection) {
+    statsObserver.observe(statsSection);
+}
+
+// Enhanced Portfolio Card Interactions
+document.querySelectorAll('.portfolio-card').forEach(card => {
+    card.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-15px) scale(1.02)';
+    });
+    
+    card.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0) scale(1)';
+    });
+});
+
+// Parallax Effect for Hero Section
+window.addEventListener('scroll', () => {
+    const scrolled = window.pageYOffset;
+    const hero = document.querySelector('.hero');
+    if (hero) {
+        hero.style.transform = `translateY(${scrolled * 0.5}px)`;
+    }
+});
+
+// Improved Smooth Scrolling with Offset
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            const headerOffset = 80;
+            const elementPosition = target.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+            });
+        }
+    });
+});
+
+// Add Scroll Progress Indicator
+const createScrollIndicator = () => {
+    const indicator = document.createElement('div');
+    indicator.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #0066cc, #00b894);
+        z-index: 9999;
+        transition: width 0.1s;
+    `;
+    document.body.appendChild(indicator);
+
+    window.addEventListener('scroll', () => {
+        const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const scrolled = (window.scrollY / windowHeight) * 100;
+        indicator.style.width = scrolled + '%';
+    });
+};
+
+createScrollIndicator();
+
+// Enhanced Navigation Scroll Effect
+let lastScroll = 0;
+const header = document.querySelector('header');
+
+window.addEventListener('scroll', () => {
+    const currentScroll = window.pageYOffset;
+    
+    // Change header background on scroll
+    if (currentScroll > 100) {
+        header.style.background = 'rgba(255,255,255,0.95)';
+        header.style.backdropFilter = 'blur(10px)';
+        header.style.boxShadow = '0 4px 20px rgba(0,0,0,0.15)';
+    } else {
+        header.style.background = 'white';
+        header.style.backdropFilter = 'none';
+        header.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+    }
+    
+    // Hide header on scroll down, show on scroll up
+    if (currentScroll > lastScroll && currentScroll > 500) {
+        header.style.transform = 'translateY(-100%)';
+    } else {
+        header.style.transform = 'translateY(0)';
+    }
+    
+    lastScroll = currentScroll;
+});
+
+// Add CSS transition for header
+header.style.transition = 'all 0.3s ease';
+
+// Lazy Load Images (for future use)
+const lazyImages = document.querySelectorAll('img[data-src]');
+const imageObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const img = entry.target;
+            img.src = img.dataset.src;
+            img.removeAttribute('data-src');
+            imageObserver.unobserve(img);
+        }
+    });
+});
+
+lazyImages.forEach(img => imageObserver.observe(img));
+
+// Add Loading State to Form Button
+const form = document.getElementById('contactForm');
+if (form) {
+    form.addEventListener('submit', function(e) {
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        
+        submitBtn.innerHTML = '<span class="loading"></span> Sending...';
+        submitBtn.disabled = true;
+        
+        // Reset after form submission attempt
+        setTimeout(() => {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }, 3000);
+    });
+}
+
+// Add Typing Effect to Hero (optional enhancement)
+const heroTitle = document.querySelector('.hero h1');
+if (heroTitle && false) { // Set to true to enable
+    const text = heroTitle.textContent;
+    heroTitle.textContent = '';
+    let i = 0;
+    
+    const typeWriter = () => {
+        if (i < text.length) {
+            heroTitle.textContent += text.charAt(i);
+            i++;
+            setTimeout(typeWriter, 50);
+        }
+    };
+    
+    setTimeout(typeWriter, 500);
+}
