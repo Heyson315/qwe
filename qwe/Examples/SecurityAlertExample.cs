@@ -52,11 +52,11 @@ namespace qwe.Examples
             // Step 2a: Validate severity and source
             Console.WriteLine("Step 2: Validating alerts...");
             string validationMessage;
-            bool isValid = alertService.ValidateAlert(alert1.Id, out validationMessage);
+            alertService.ValidateAlert(alert1.Id, out validationMessage);
             Console.WriteLine($"Alert {alert1.AlertId}: {validationMessage}");
 
             // Step 2b: Gather related logs
-            Console.WriteLine("\nGathering logs for Alert {0}...", alert1.AlertId);
+            Console.WriteLine($"\nGathering logs for Alert {alert1.AlertId}...");
             var logs = new List<string>
             {
                 "2024-01-15 10:30:00 - Failed login from 192.168.1.100",
@@ -70,7 +70,7 @@ namespace qwe.Examples
             // Step 2c: Check for false positives
             Console.WriteLine("\nChecking for false positives...");
             string fpReason;
-            bool isFalsePositive = alertService.CheckFalsePositive(alert3.Id, out fpReason);
+            alertService.CheckFalsePositive(alert3.Id, out fpReason);
             Console.WriteLine($"Alert {alert3.AlertId}: {fpReason}");
 
             // Step 3: Investigate alerts
@@ -82,9 +82,9 @@ namespace qwe.Examples
             Console.WriteLine($"Alert {alert2.AlertId} assigned to SecurityAnalyst2");
 
             // Step 4a: Remediate alert 1
-            Console.WriteLine("\nStep 4a: Remediating Alert {0}...", alert1.AlertId);
+            Console.WriteLine($"\nStep 4a: Remediating Alert {alert1.AlertId}...");
             string remediationMessage;
-            bool remediated = alertService.RemediateAlert(
+            alertService.RemediateAlert(
                 alert1.Id,
                 "revoke_credentials",
                 "User credentials revoked and password reset email sent",
@@ -94,8 +94,8 @@ namespace qwe.Examples
             Console.WriteLine(remediationMessage);
 
             // Step 4b: Remediate alert 2
-            Console.WriteLine("\nRemediating Alert {0}...", alert2.AlertId);
-            remediated = alertService.RemediateAlert(
+            Console.WriteLine($"\nRemediating Alert {alert2.AlertId}...");
+            alertService.RemediateAlert(
                 alert2.Id,
                 "isolate_endpoint",
                 "Endpoint isolated from network, forensic analysis initiated",
@@ -135,17 +135,15 @@ namespace qwe.Examples
             Console.WriteLine($"False Positives: {summary.FalsePositives}");
 
             Console.WriteLine("\nAlerts by Severity:");
-            foreach (var kvp in summary.AlertsBySeverity)
+            foreach (var kvp in summary.AlertsBySeverity.Where(x => x.Value > 0))
             {
-                if (kvp.Value > 0)
-                    Console.WriteLine($"  {kvp.Key}: {kvp.Value}");
+                Console.WriteLine($"  {kvp.Key}: {kvp.Value}");
             }
 
             Console.WriteLine("\nAlerts by Status:");
-            foreach (var kvp in summary.AlertsByStatus)
+            foreach (var kvp in summary.AlertsByStatus.Where(x => x.Value > 0))
             {
-                if (kvp.Value > 0)
-                    Console.WriteLine($"  {kvp.Key}: {kvp.Value}");
+                Console.WriteLine($"  {kvp.Key}: {kvp.Value}");
             }
 
             Console.WriteLine("\nActions Taken:");

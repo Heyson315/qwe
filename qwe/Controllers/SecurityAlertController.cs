@@ -31,7 +31,7 @@ namespace qwe.Controllers
                     data = alerts
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return InternalServerError(new Exception("An error occurred while retrieving all alerts"));
             }
@@ -52,7 +52,7 @@ namespace qwe.Controllers
                     data = alerts
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return InternalServerError(new Exception("An error occurred while retrieving active alerts"));
             }
@@ -77,7 +77,7 @@ namespace qwe.Controllers
                     data = alert
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return InternalServerError(new Exception("An error occurred while retrieving the alert"));
             }
@@ -117,7 +117,7 @@ namespace qwe.Controllers
                     data = alert
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return InternalServerError(new Exception("An error occurred while creating the alert"));
             }
@@ -140,7 +140,7 @@ namespace qwe.Controllers
                     message = validationMessage
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return InternalServerError(new Exception("An error occurred while validating the alert"));
             }
@@ -158,22 +158,21 @@ namespace qwe.Controllers
                     return BadRequest("Valid alert ID is required");
                 }
 
-                var alert = _alertService.GetAlertById(request.AlertId);
+                var alert = _alertService.InvestigateAlert(request.AlertId, request.InvestigatedBy ?? "System");
+                
                 if (alert == null)
                 {
                     return NotFound();
                 }
 
-                _alertService.InvestigateAlert(request.AlertId, request.InvestigatedBy ?? "System");
-
                 return Ok(new
                 {
                     success = true,
                     message = "Alert investigation started",
-                    data = _alertService.GetAlertById(request.AlertId)
+                    data = alert
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return InternalServerError(new Exception("An error occurred while investigating the alert"));
             }
@@ -195,16 +194,18 @@ namespace qwe.Controllers
                 if (logs != null && logs.Any())
                 {
                     _alertService.GatherAlertContext(id, logs);
+                    // Refresh alert after gathering logs
+                    alert = _alertService.GetAlertById(id);
                 }
 
                 return Ok(new
                 {
                     success = true,
                     message = "Logs gathered successfully",
-                    data = _alertService.GetAlertById(id)
+                    data = alert
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return InternalServerError(new Exception("An error occurred while gathering logs"));
             }
@@ -225,6 +226,9 @@ namespace qwe.Controllers
 
                 string reason;
                 var isFalsePositive = _alertService.CheckFalsePositive(id, out reason);
+                
+                // Refresh alert after checking false positive (status may have changed)
+                alert = _alertService.GetAlertById(id);
 
                 return Ok(new
                 {
@@ -234,7 +238,7 @@ namespace qwe.Controllers
                     data = alert
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return InternalServerError(new Exception("An error occurred while checking for false positive"));
             }
@@ -277,7 +281,7 @@ namespace qwe.Controllers
                     data = _alertService.GetAlertById(request.AlertId)
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return InternalServerError(new Exception("An error occurred while remediating the alert"));
             }
@@ -295,26 +299,25 @@ namespace qwe.Controllers
                     return BadRequest("Valid alert ID is required");
                 }
 
-                var alert = _alertService.GetAlertById(request.AlertId);
-                if (alert == null)
-                {
-                    return NotFound();
-                }
-
-                _alertService.EscalateAlert(
+                var alert = _alertService.EscalateAlert(
                     request.AlertId,
                     request.EscalationNotes ?? "Requires security team review",
                     request.RecommendedNextSteps ?? "Further investigation needed",
                     request.EscalatedBy ?? "System");
 
+                if (alert == null)
+                {
+                    return NotFound();
+                }
+
                 return Ok(new
                 {
                     success = true,
                     message = "Alert escalated to security team",
-                    data = _alertService.GetAlertById(request.AlertId)
+                    data = alert
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return InternalServerError(new Exception("An error occurred while escalating the alert"));
             }
@@ -335,7 +338,7 @@ namespace qwe.Controllers
                     data = summary
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return InternalServerError(new Exception("An error occurred while generating the summary report"));
             }
@@ -356,15 +359,18 @@ namespace qwe.Controllers
 
                 string closedBy = request?.ClosedBy ?? "System";
                 _alertService.CloseAlert(id, closedBy);
+                
+                // Refresh alert after closing
+                alert = _alertService.GetAlertById(id);
 
                 return Ok(new
                 {
                     success = true,
                     message = "Alert closed successfully",
-                    data = _alertService.GetAlertById(id)
+                    data = alert
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return InternalServerError(new Exception("An error occurred while closing the alert"));
             }
@@ -387,7 +393,7 @@ namespace qwe.Controllers
                     count = count
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return InternalServerError(new Exception("An error occurred while closing resolved alerts"));
             }

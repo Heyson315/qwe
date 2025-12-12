@@ -65,29 +65,32 @@ namespace qwe.Services
         // Step 2: Validate severity and source
         public bool ValidateAlert(int alertId, out string validationMessage)
         {
-            var alert = GetAlertById(alertId);
-            if (alert == null)
+            lock (_lock)
             {
-                validationMessage = "Alert not found";
-                return false;
-            }
+                var alert = _alerts.FirstOrDefault(a => a.Id == alertId);
+                if (alert == null)
+                {
+                    validationMessage = "Alert not found";
+                    return false;
+                }
 
-            // Validate severity
-            if (!Enum.IsDefined(typeof(AlertSeverity), alert.Severity))
-            {
-                validationMessage = "Invalid severity level";
-                return false;
-            }
+                // Validate severity
+                if (!Enum.IsDefined(typeof(AlertSeverity), alert.Severity))
+                {
+                    validationMessage = "Invalid severity level";
+                    return false;
+                }
 
-            // Validate source
-            if (string.IsNullOrWhiteSpace(alert.Source))
-            {
-                validationMessage = "Alert source is missing";
-                return false;
-            }
+                // Validate source
+                if (string.IsNullOrWhiteSpace(alert.Source))
+                {
+                    validationMessage = "Alert source is missing";
+                    return false;
+                }
 
-            validationMessage = "Alert validated successfully";
-            return true;
+                validationMessage = "Alert validated successfully";
+                return true;
+            }
         }
 
         // Step 2: Gather related logs, endpoints, and user activity
@@ -115,41 +118,45 @@ namespace qwe.Services
         // Step 2: Check for false positives
         public bool CheckFalsePositive(int alertId, out string reason)
         {
-            var alert = GetAlertById(alertId);
-            if (alert == null)
+            lock (_lock)
             {
-                reason = "Alert not found";
+                var alert = _alerts.FirstOrDefault(a => a.Id == alertId);
+                if (alert == null)
+                {
+                    reason = "Alert not found";
+                    return false;
+                }
+
+                // Implement false positive detection logic
+                // This is a simplified version - in production, use ML or rule-based system
+                var falsePositiveIndicators = new[]
+                {
+                    "test environment",
+                    "scheduled maintenance",
+                    "authorized security scan",
+                    "known benign activity"
+                };
+
+                var description = alert.Description?.ToLower() ?? "";
+                var title = alert.Title?.ToLower() ?? "";
+                var isFalsePositive = falsePositiveIndicators.Any(indicator => 
+                    description.Contains(indicator) || title.Contains(indicator));
+
+                if (isFalsePositive)
+                {
+                    alert.IsFalsePositive = true;
+                    alert.Status = AlertStatus.FalsePositive;
+                    reason = "Alert marked as false positive based on context analysis";
+                    return true;
+                }
+
+                reason = "Alert appears to be legitimate";
                 return false;
             }
-
-            // Implement false positive detection logic
-            // This is a simplified version - in production, use ML or rule-based system
-            var falsePositiveIndicators = new[]
-            {
-                "test environment",
-                "scheduled maintenance",
-                "authorized security scan",
-                "known benign activity"
-            };
-
-            var description = alert.Description?.ToLower() ?? "";
-            var isFalsePositive = falsePositiveIndicators.Any(indicator => 
-                description.Contains(indicator));
-
-            if (isFalsePositive)
-            {
-                alert.IsFalsePositive = true;
-                alert.Status = AlertStatus.FalsePositive;
-                reason = "Alert marked as false positive based on context analysis";
-                return true;
-            }
-
-            reason = "Alert appears to be legitimate";
-            return false;
         }
 
         // Start investigation
-        public void InvestigateAlert(int alertId, string investigatedBy)
+        public SecurityAlert InvestigateAlert(int alertId, string investigatedBy)
         {
             lock (_lock)
             {
@@ -160,43 +167,49 @@ namespace qwe.Services
                     alert.InvestigatedAt = DateTime.UtcNow;
                     alert.InvestigatedBy = investigatedBy;
                 }
+                return alert;
             }
         }
 
         // Step 3: Apply remediation actions
         public bool RemediateAlert(int alertId, string remediationType, string notes, string remediatedBy, out string message)
         {
-            var alert = GetAlertById(alertId);
-            if (alert == null)
+            lock (_lock)
             {
-                message = "Alert not found";
+                var alert = _alerts.FirstOrDefault(a => a.Id == alertId);
+                if (alert == null)
+                {
+                    message = "Alert not found";
+                    return false;
+                }
+
+                if (alert.IsFalsePositive)
+                {
+                    message = "Cannot remediate a false positive alert";
+                    return false;
+                }
+
+                // Apply remediation based on type
+                var remediationResult = ApplyRemediation(alert, remediationType, out string remediationError);
+                
+                if (remediationResult)
+                {
+                    alert.RemediationAction = $"{remediationType}: {notes}";
+                    alert.Status = AlertStatus.Remediated;
+                    alert.ResolvedAt = DateTime.UtcNow;
+                    message = $"Alert remediated successfully using {remediationType}";
+                    return true;
+                }
+
+                message = remediationError ?? "Remediation failed";
                 return false;
             }
-
-            if (alert.IsFalsePositive)
-            {
-                message = "Cannot remediate a false positive alert";
-                return false;
-            }
-
-            // Apply remediation based on type
-            var remediationResult = ApplyRemediation(alert, remediationType);
-            
-            if (remediationResult)
-            {
-                alert.RemediationAction = $"{remediationType}: {notes}";
-                alert.Status = AlertStatus.Remediated;
-                alert.ResolvedAt = DateTime.UtcNow;
-                message = $"Alert remediated successfully using {remediationType}";
-                return true;
-            }
-
-            message = "Remediation failed";
-            return false;
         }
 
-        private bool ApplyRemediation(SecurityAlert alert, string remediationType)
+        private bool ApplyRemediation(SecurityAlert alert, string remediationType, out string errorMessage)
         {
+            errorMessage = null;
+            
             switch (remediationType.ToLower())
             {
                 case "isolate_endpoint":
@@ -206,6 +219,7 @@ namespace qwe.Services
                         // In production: Call endpoint management API
                         return true;
                     }
+                    errorMessage = "Cannot isolate endpoint: AffectedEndpoint not specified";
                     return false;
 
                 case "revoke_credentials":
@@ -215,6 +229,7 @@ namespace qwe.Services
                         // In production: Call identity management API
                         return true;
                     }
+                    errorMessage = "Cannot revoke credentials: AffectedUser not specified";
                     return false;
 
                 case "patch_vulnerability":
@@ -234,15 +249,17 @@ namespace qwe.Services
                         // In production: Call user management API
                         return true;
                     }
+                    errorMessage = "Cannot disable account: AffectedUser not specified";
                     return false;
 
                 default:
+                    errorMessage = $"Unknown remediation type: {remediationType}";
                     return false;
             }
         }
 
         // Step 4: Escalate to security team
-        public void EscalateAlert(int alertId, string escalationNotes, string recommendedNextSteps, string escalatedBy)
+        public SecurityAlert EscalateAlert(int alertId, string escalationNotes, string recommendedNextSteps, string escalatedBy)
         {
             lock (_lock)
             {
@@ -253,6 +270,7 @@ namespace qwe.Services
                     alert.EscalationNotes = $"[{escalatedBy}] {escalationNotes}\nRecommended: {recommendedNextSteps}";
                     // In production: Send notification to security team
                 }
+                return alert;
             }
         }
 

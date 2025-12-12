@@ -64,8 +64,12 @@ namespace qwe.Tests.Services
         public void GetActiveAlerts_ShouldReturnOnlyActiveAlerts()
         {
             // Arrange
-            var alert1 = _service.CreateAlert("Alert 1", "Description 1", AlertSeverity.High, "SIEM");
+            var alert1 = _service.CreateAlert("Alert 1", "Description 1", AlertSeverity.High, "SIEM", "endpoint1");
             var alert2 = _service.CreateAlert("Alert 2", "Description 2", AlertSeverity.Medium, "Firewall");
+            
+            // Remediate alert1 before closing
+            string msg;
+            _service.RemediateAlert(alert1.Id, "isolate_endpoint", "Isolated", "Admin", out msg);
             _service.CloseAlert(alert1.Id, "Admin");
 
             // Act
@@ -255,7 +259,7 @@ namespace qwe.Tests.Services
         {
             // Arrange
             var alert1 = _service.CreateAlert("Alert 1", "Description", AlertSeverity.Critical, "SIEM");
-            var alert2 = _service.CreateAlert("Alert 2", "Description", AlertSeverity.High, "Firewall");
+            _service.CreateAlert("Alert 2", "Description", AlertSeverity.High, "Firewall");
             var alert3 = _service.CreateAlert("Alert 3", "test environment", AlertSeverity.Low, "SIEM");
 
             _service.InvestigateAlert(alert1.Id, "Analyst1");
