@@ -11,9 +11,9 @@ namespace qwe.Controllers
     {
         private readonly SecurityAlertService _alertService;
 
-        public SecurityAlertController()
+        public SecurityAlertController(SecurityAlertService alertService)
         {
-            _alertService = new SecurityAlertService();
+            _alertService = alertService;
         }
 
         // GET: api/securityalert
