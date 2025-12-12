@@ -231,7 +231,7 @@ namespace qwe.Controllers
                     success = true,
                     isFalsePositive = isFalsePositive,
                     reason = reason,
-                    data = _alertService.GetAlertById(id)
+                    data = alert
                 });
             }
             catch (Exception ex)
