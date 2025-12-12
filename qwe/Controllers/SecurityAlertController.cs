@@ -185,17 +185,11 @@ namespace qwe.Controllers
         {
             try
             {
-                var alert = _alertService.GetAlertById(id);
+                var alert = _alertService.GatherAlertContext(id, logs);
+                
                 if (alert == null)
                 {
                     return NotFound();
-                }
-
-                if (logs != null && logs.Any())
-                {
-                    _alertService.GatherAlertContext(id, logs);
-                    // Refresh alert after gathering logs
-                    alert = _alertService.GetAlertById(id);
                 }
 
                 return Ok(new
@@ -218,17 +212,15 @@ namespace qwe.Controllers
         {
             try
             {
+                string reason;
+                var isFalsePositive = _alertService.CheckFalsePositive(id, out reason);
+                
+                // Get the potentially updated alert
                 var alert = _alertService.GetAlertById(id);
                 if (alert == null)
                 {
                     return NotFound();
                 }
-
-                string reason;
-                var isFalsePositive = _alertService.CheckFalsePositive(id, out reason);
-                
-                // Refresh alert after checking false positive (status may have changed)
-                alert = _alertService.GetAlertById(id);
 
                 return Ok(new
                 {
@@ -351,17 +343,13 @@ namespace qwe.Controllers
         {
             try
             {
-                var alert = _alertService.GetAlertById(id);
+                string closedBy = request?.ClosedBy ?? "System";
+                var alert = _alertService.CloseAlert(id, closedBy);
+                
                 if (alert == null)
                 {
                     return NotFound();
                 }
-
-                string closedBy = request?.ClosedBy ?? "System";
-                _alertService.CloseAlert(id, closedBy);
-                
-                // Refresh alert after closing
-                alert = _alertService.GetAlertById(id);
 
                 return Ok(new
                 {

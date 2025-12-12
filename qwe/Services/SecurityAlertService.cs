@@ -94,11 +94,11 @@ namespace qwe.Services
         }
 
         // Step 2: Gather related logs, endpoints, and user activity
-        public void GatherAlertContext(int alertId, List<string> logs)
+        public SecurityAlert GatherAlertContext(int alertId, List<string> logs)
         {
             if (logs == null || logs.Count == 0)
             {
-                return;
+                return GetAlertById(alertId);
             }
 
             lock (_lock)
@@ -112,6 +112,7 @@ namespace qwe.Services
                                         .ToList();
                     alert.RelatedLogs.AddRange(validLogs);
                 }
+                return alert;
             }
         }
 
@@ -320,7 +321,7 @@ namespace qwe.Services
         }
 
         // Step 6: Close resolved alerts
-        public void CloseAlert(int alertId, string closedBy)
+        public SecurityAlert CloseAlert(int alertId, string closedBy)
         {
             lock (_lock)
             {
@@ -330,6 +331,7 @@ namespace qwe.Services
                     alert.Status = AlertStatus.Closed;
                     alert.ResolvedAt = DateTime.UtcNow;
                 }
+                return alert;
             }
         }
 
